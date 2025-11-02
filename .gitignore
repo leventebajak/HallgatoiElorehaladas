@@ -1,0 +1,7 @@
+.vscode/
+.idea/
+build/
+dist/
+**/*.spec
+**/*.xlsx
+**/*.json
