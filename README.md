@@ -80,6 +80,7 @@ python hallgatoi_elorehaladas.py
      - Bejegyzés típusa
      - Bejegyzés dátuma
      - Érvényes
+     - Elismert
 
 2. **Excel fájl létrehozása:**
    - Kattints az "Excel fájl létrehozása" gombra
@@ -100,6 +101,14 @@ Az Excel fájl az alábbi oszlopokat tartalmazza:
 - **Kurzus oszlopok** (a hozzáadott kurzusok sorrendjében):
   - Évközi jegy / Szigorlat / Aláírás: 1 oszlop
   - Aláírás + Vizsgajegy: 2 oszlop (aláírás | vizsgajegy)
+
+**Színkódolás:**
+
+Az Excel fájlban a cellák automatikusan színkódolva vannak az alábbiak szerint:
+
+- **Zöld (#92D050)**: A kurzus elismert ("Elismert" oszlop értéke "Igaz")
+- **Sárga (#FFFF00)**: A hallgató nem vette fel a kurzust (üres cella)
+- **Váltakozó kék árnyalatok**: Nem elismert, de felvett kurzusok
 
 **Adatfeldolgozás logikája:**
 
@@ -134,12 +143,20 @@ A naplófájl tartalmazza:
 ```json
 [
   {
-    "course_code": "BMEVISZAA00",
+    "course_code": "BMETE90AX21",
+    "grading_type": "Aláírás és Vizsgajegy"
+  },
+  {
+    "course_code": "BMETE11AX52",
     "grading_type": "Évközi jegy"
   },
   {
-    "course_code": "BMEVISZAB00",
-    "grading_type": "Aláírás + Vizsgajegy"
+    "course_code": "BMETE90AX20",
+    "grading_type": "Szigorlat"
+  },
+  {
+    "course_code": "BMEVIDHKONI",
+    "grading_type": "Aláírás"
   }
 ]
 ```

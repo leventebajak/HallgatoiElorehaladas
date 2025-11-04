@@ -201,7 +201,7 @@ class CourseManagerApp:
         required_columns = [
             "Modulkód", "Felvétel féléve", "Neptun kód", "Nyomtatási név",
             "Tárgykód", "Tárgynév", "Bejegyzés értéke", "Bejegyzés típusa",
-            "Bejegyzés dátuma", "Érvényes"
+            "Bejegyzés dátuma", "Érvényes", "Elismert"
         ]
 
         try:
@@ -427,7 +427,7 @@ class CourseManagerApp:
             df = pd.read_excel(student_file)
 
             # Select only the columns we need and keep all rows (including invalid ones for signature checking)
-            df = df[["Neptun kód", "Tárgykód", "Bejegyzés értéke", "Bejegyzés dátuma", "Érvényes", "Bejegyzés típusa"]]
+            df = df[["Neptun kód", "Tárgykód", "Bejegyzés értéke", "Bejegyzés dátuma", "Érvényes", "Bejegyzés típusa", "Elismert"]]
 
             if self.logger:
                 self.logger.info(f"Hallgatói adatok betöltve: {len(df)} bejegyzés")
@@ -439,7 +439,8 @@ class CourseManagerApp:
             raise
 
     def get_student_grade(self, student_data, neptun_kod, course_code):
-        """Get the latest valid grade for a student in a specific course from cached data."""
+        """Get the latest valid grade for a student in a specific course from cached data.
+        Returns tuple: (grade, is_recognized)"""
         try:
             # Filter for the specific student, course, and valid entries
             filtered = student_data[
@@ -451,24 +452,26 @@ class CourseManagerApp:
             if filtered.empty:
                 if self.logger:
                     self.logger.debug(f"Nincs érvényes bejegyzés - Neptun: {neptun_kod}, Tárgykód: {course_code}")
-                return None
+                return None, False
 
             # Sort by date and get the most recent grade
             filtered = filtered.sort_values("Bejegyzés dátuma", ascending=False)
             grade = filtered.iloc[0]["Bejegyzés értéke"]
+            is_recognized = filtered.iloc[0]["Elismert"] in ["Igaz", True, "TRUE", "true"]
 
             if self.logger:
-                self.logger.debug(f"Jegy talált - Neptun: {neptun_kod}, Tárgykód: {course_code}, Jegy: {grade}")
+                self.logger.debug(f"Jegy talált - Neptun: {neptun_kod}, Tárgykód: {course_code}, Jegy: {grade}, Elismert: {is_recognized}")
 
-            return grade
+            return grade, is_recognized
         except Exception as e:
             if self.logger:
                 self.logger.warning(
                     f"Hiba a jegy lekérése során - Neptun: {neptun_kod}, Tárgykód: {course_code}: {str(e)}")
-            return None
+            return None, False
 
     def get_student_signature_and_exam(self, student_data, neptun_kod, course_code):
-        """Get signature and exam grade for a student in a specific course."""
+        """Get signature and exam grade for a student in a specific course.
+        Returns tuple: (signature, exam_grade, signature_is_recognized, exam_is_recognized)"""
         try:
             # Filter for the specific student and course
             filtered = student_data[
@@ -479,7 +482,7 @@ class CourseManagerApp:
             if filtered.empty:
                 if self.logger:
                     self.logger.debug(f"Nincs bejegyzés - Neptun: {neptun_kod}, Tárgykód: {course_code}")
-                return None, None
+                return None, None, False, False
 
             # Filter for Aláírás entries
             alairas = filtered[filtered["Bejegyzés típusa"] == "Aláírás"]
@@ -487,17 +490,18 @@ class CourseManagerApp:
             if alairas.empty:
                 if self.logger:
                     self.logger.warning(f"Nincs aláírás bejegyzés - Neptun: {neptun_kod}, Tárgykód: {course_code}")
-                return None, None
+                return None, None, False, False
 
             # Sort by date and get the most recent signature
             alairas = alairas.sort_values("Bejegyzés dátuma", ascending=False)
             latest_signature = alairas.iloc[0]["Bejegyzés értéke"]
+            signature_is_recognized = alairas.iloc[0]["Elismert"] in ["Igaz", True, "TRUE", "true"]
 
             # If signature is "Megtagadva", return it with no exam grade
             if latest_signature == "Megtagadva":
                 if self.logger:
                     self.logger.debug(f"Aláírás megtagadva - Neptun: {neptun_kod}, Tárgykód: {course_code}")
-                return latest_signature, None
+                return latest_signature, None, signature_is_recognized, False
 
             # If signature is "Aláírva", look for exam grade
             if latest_signature == "Aláírva":
@@ -511,26 +515,27 @@ class CourseManagerApp:
                     # Sort by date and get the most recent exam grade
                     vizsgajegy = vizsgajegy.sort_values("Bejegyzés dátuma", ascending=False)
                     exam_grade = vizsgajegy.iloc[0]["Bejegyzés értéke"]
+                    exam_is_recognized = vizsgajegy.iloc[0]["Elismert"] in ["Igaz", True, "TRUE", "true"]
                     if self.logger:
                         self.logger.debug(
-                            f"Aláírás és Vizsgajegy - Neptun: {neptun_kod}, Tárgykód: {course_code}, Jegy: {exam_grade}")
-                    return latest_signature, exam_grade
+                            f"Aláírás és Vizsgajegy - Neptun: {neptun_kod}, Tárgykód: {course_code}, Jegy: {exam_grade}, Elismert: {exam_is_recognized}")
+                    return latest_signature, exam_grade, signature_is_recognized, exam_is_recognized
                 else:
                     if self.logger:
                         self.logger.debug(
                             f"Aláírva, de nincs vizsgajegy - Neptun: {neptun_kod}, Tárgykód: {course_code}")
-                    return latest_signature, None
+                    return latest_signature, None, signature_is_recognized, False
 
             # For any other signature value
             if self.logger:
                 self.logger.debug(
                     f"Egyéb aláírás érték - Neptun: {neptun_kod}, Tárgykód: {course_code}, Érték: {latest_signature}")
-            return latest_signature, None
+            return latest_signature, None, signature_is_recognized, False
         except Exception as e:
             if self.logger:
                 self.logger.warning(
                     f"Hiba az aláírás/vizsgajegy lekérése során - Neptun: {neptun_kod}, Tárgykód: {course_code}: {str(e)}")
-            return None, None
+            return None, None, False, False
 
     def create_excel_file(self, file_path, student_file):
         if self.logger:
@@ -551,6 +556,8 @@ class CourseManagerApp:
 
         # Define colors
         colors = ["D9E1F2", "B4C6E7"]
+        yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+        green_fill = PatternFill(start_color="92D050", end_color="92D050", fill_type="solid")
 
         # Define border style
         thin_border = Border(
@@ -649,11 +656,19 @@ class CourseManagerApp:
                     if neptun_kod:
                         try:
                             # Get the signature and exam grade for this student and course
-                            signature, exam = self.get_student_signature_and_exam(student_data, neptun_kod, course_code)
+                            signature, exam, sig_recognized, exam_recognized = self.get_student_signature_and_exam(student_data, neptun_kod, course_code)
                             if signature:
                                 cell1.value = signature
+                            else:
+                                # Student didn't take the course - color both cells yellow
+                                cell1.fill = yellow_fill
+                                cell2.fill = yellow_fill
                             if exam:
                                 cell2.value = exam
+                            # If recognized, color green, otherwise keep the alternating color
+                            if sig_recognized and exam_recognized:
+                                cell1.fill = green_fill
+                                cell2.fill = green_fill
                         except Exception as e:
                             if self.logger:
                                 self.logger.error(
@@ -679,9 +694,15 @@ class CourseManagerApp:
                     if neptun_kod:
                         try:
                             # Get the grade/signature for this student and course from cached data
-                            grade = self.get_student_grade(student_data, neptun_kod, course_code)
+                            grade, is_recognized = self.get_student_grade(student_data, neptun_kod, course_code)
                             if grade:
                                 cell.value = grade
+                                # If recognized, color green, otherwise keep the alternating color
+                                if is_recognized:
+                                    cell.fill = green_fill
+                            else:
+                                # Student didn't take the course - color cell yellow
+                                cell.fill = yellow_fill
                         except Exception as e:
                             if self.logger:
                                 self.logger.error(
