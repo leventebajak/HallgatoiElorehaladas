@@ -55,6 +55,7 @@ A program figyelmeztet, ha:
 
 ## Fájlok
 
+<<<<<<< HEAD
 A projekt a következő forrásfájlokból áll:
 
 *   [`Hallgatoi_Elorehaladas.xlsm`](./Hallgatoi_Elorehaladas.xlsm): A fő Excel fájl (Vezérlőpult)
@@ -62,3 +63,127 @@ A projekt a következő forrásfájlokból áll:
 *   [`DataModule.bas`](./DataModule.bas): Adatok beolvasása, validálása és előkészítése
 *   [`LogicModule.bas`](./LogicModule.bas): A tantárgyi követelmények (jegyek, aláírások) kiértékelésének logikája
 *   [`ReportModule.bas`](./ReportModule.bas): A kimeneti Excel munkalap generálása és formázása
+=======
+1. **Hallgatói adatok betöltése:**
+   - Kattints a "Tallózás..." gombra
+   - Válaszd ki a hallgatói adatokat tartalmazó Excel fájlt
+   - A fájlnak tartalmaznia kell a következő oszlopokat:
+     - Modulkód
+     - Felvétel féléve
+     - Neptun kód
+     - Nyomtatási név
+     - Tárgykód
+     - Tárgynév
+     - Bejegyzés értéke
+     - Bejegyzés típusa
+     - Bejegyzés dátuma
+     - Érvényes
+     - Elismert
+
+2. **Excel fájl létrehozása:**
+   - Kattints az "Excel fájl létrehozása" gombra
+   - Add meg a mentési helyet és fájlnevet
+   - Az alkalmazás automatikusan feldolgozza az adatokat
+
+**Kimeneti fájl szerkezete:**
+
+Az Excel fájl az alábbi oszlopokat tartalmazza:
+- **Alapadatok** (minden hallgatónál):
+  - Modulkód
+  - Felvétel féléve
+  - Neptun kód
+  - Nyomtatási név
+  - Felvételi összes pontszám (üres)
+  - Státusz (üres)
+
+- **Kurzus oszlopok** (a hozzáadott kurzusok sorrendjében):
+  - Évközi jegy / Szigorlat / Aláírás: 1 oszlop
+  - Aláírás + Vizsgajegy: 2 oszlop (aláírás | vizsgajegy)
+
+**Színkódolás:**
+
+Az Excel fájlban a cellák automatikusan színkódolva vannak az alábbiak szerint:
+
+- **Zöld (#92D050)**: A kurzus elismert ("Elismert" oszlop értéke "Igaz")
+- **Sárga (#FFFF00)**: A hallgató nem vette fel a kurzust (üres cella)
+- **Váltakozó kék árnyalatok**: Nem elismert, de felvett kurzusok
+
+**Adatfeldolgozás logikája:**
+
+- **Évközi jegy / Szigorlat:**
+  - A legfrissebb érvényes bejegyzés kerül be
+
+- **Aláírás:**
+  - A legfrissebb aláírás bejegyzés kerül be
+
+- **Aláírás + Vizsgajegy:**
+  - Bal oszlop: Legfrissebb aláírás (Aláírva/Megtagadva)
+  - Jobb oszlop: Ha aláírás = "Aláírva", akkor a legfrissebb érvényes vizsgajegy
+  - Ha aláírás = "Megtagadva", a jobb oszlop üres marad
+
+## Naplózás
+
+Az alkalmazás automatikusan naplóz minden műveletet az Excel generálás során:
+
+- **Ha nincsenek hibák/figyelmeztetések:** A naplófájl automatikusan törlődik
+- **Ha vannak hibák/figyelmeztetések:** A naplófájl megmarad és a név a kimeneti fájl neve + `_log_ÉÉÉÉHHNN_ÓÓPPMM.txt`
+
+A naplófájl tartalmazza:
+- Feldolgozott adatok mennyisége
+- Minden egyes kurzus feldolgozásának részletei
+- Hiányzó vagy érvénytelen adatok figyelmeztetései
+- Hibák részletes leírása
+
+## Fájlformátumok
+
+### Kurzuslista JSON formátum
+
+```json
+[
+  {
+    "course_code": "BMETE90AX21",
+    "grading_type": "Aláírás és Vizsgajegy"
+  },
+  {
+    "course_code": "BMETE11AX52",
+    "grading_type": "Évközi jegy"
+  },
+  {
+    "course_code": "BMETE90AX20",
+    "grading_type": "Szigorlat"
+  },
+  {
+    "course_code": "BMEVIDHKONI",
+    "grading_type": "Aláírás"
+  }
+]
+```
+
+## Hibaelhárítás
+
+### "Érvénytelen fájl" hiba
+- Ellenőrizd, hogy a hallgatói Excel fájl tartalmazza az összes szükséges oszlopot
+- Az oszlopneveknek pontosan egyezniük kell a fent felsoroltakkal
+
+### Üres cellák a kimeneti fájlban
+- Ellenőrizd a naplófájlt, ha létrejött
+- Lehet, hogy az adott hallgatónak nincs érvényes bejegyzése az adott kurzushoz
+- Ellenőrizd, hogy a tárgykód pontosan egyezik a forrás fájlban és a kurzuslistában
+
+### Az alkalmazás nem indul
+- Ellenőrizd, hogy telepítve vannak-e a szükséges csomagok: `pip install -r requirements.txt`
+- Ellenőrizd a Python verziót: `python --version` (minimum 3.8 szükséges)
+
+## Technikai részletek
+
+- **Programozási nyelv:** Python 3
+- **GUI keretrendszer:** tkinter
+- **Fő könyvtárak:**
+  - pandas: Adatfeldolgozás
+  - openpyxl: Excel fájl írás/olvasás
+  - logging: Naplózás
+
+## Licensz
+
+Ez a projekt oktatási célra készült.
+>>>>>>> origin/master
